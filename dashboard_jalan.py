@@ -4,14 +4,8 @@ import plotly.express as px
 import folium
 from streamlit_folium import st_folium
 
-# Konfigurasi halaman
-st.set_page_config(
-    page_title="Dashboard Jalan Desa Jawa Barat",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Dashboard Jalan Desa Jawa Barat", layout="wide")
 
-# ========== LOAD DATA ==========
 @st.cache_data
 def load_data():
     df = pd.read_excel("DATA JALAN DESA.xlsx", sheet_name='02  DATA JALAN DESA')
@@ -21,32 +15,47 @@ def load_data():
 
 df = load_data()
 
-# ========== HEADER ==========
-st.markdown("<h1 style='text-align: center;'>🛣️ Dashboard Kondisi Jalan Desa<br>Provinsi Jawa Barat</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Analisis visual interaktif kondisi jalan desa berdasarkan kategori: Baik, Rusak Ringan, Rusak Sedang, dan Rusak Berat.</p>", unsafe_allow_html=True)
-st.markdown("---")
+# ========== UI HEADER ==========
+st.title("🛣️ Dashboard Kondisi Jalan Desa - Provinsi Jawa Barat")
+st.markdown("Analisis visual interaktif kondisi jalan desa berdasarkan kategori: Baik, Rusak Ringan, Rusak Sedang, dan Rusak Berat.")
 
 # ========== FILTER ==========
-with st.sidebar:
-    st.header("🔍 Filter Data")
-    selected_kab = st.selectbox("Pilih Kabupaten", ["Semua"] + sorted(df['KABUPATEN'].dropna().unique()))
-    df_kab = df[df['KABUPATEN'] == selected_kab] if selected_kab != "Semua" else df.copy()
+kabupaten_list = sorted(df['KABUPATEN'].dropna().unique())
+selected_kab = st.selectbox("Pilih Kabupaten", ["Semua"] + kabupaten_list)
 
-    selected_kec = st.selectbox("Pilih Kecamatan", ["Semua"] + sorted(df_kab['KECAMATAN'].dropna().unique()))
-    df_kec = df_kab[df_kab['KECAMATAN'] == selected_kec] if selected_kec != "Semua" else df_kab
+# Filter berdasarkan kabupaten (jika dipilih)
+if selected_kab != "Semua":
+    df_kab = df[df['KABUPATEN'] == selected_kab]
+else:
+    df_kab = df.copy()
 
-    selected_desa = st.selectbox("Pilih Desa", ["Semua"] + sorted(df_kec['DESA'].dropna().unique()))
-    df_filtered = df_kec[df_kec['DESA'] == selected_desa] if selected_desa != "Semua" else df_kec
+kecamatan_list = sorted(df_kab['KECAMATAN'].dropna().unique())
+selected_kec = st.selectbox("Pilih Kecamatan", ["Semua"] + kecamatan_list)
 
-    if 'JENIS PERKERASAN' in df.columns:
-        jenis_list = sorted(df_filtered['JENIS PERKERASAN'].dropna().unique())
-        selected_jenis = st.multiselect("Pilih Jenis Perkerasan", jenis_list, default=jenis_list)
-        df_filtered = df_filtered[df_filtered['JENIS PERKERASAN'].isin(selected_jenis)]
+# Filter berdasarkan kecamatan
+if selected_kec != "Semua":
+    df_kec = df_kab[df_kab['KECAMATAN'] == selected_kec]
+else:
+    df_kec = df_kab.copy()
 
-# ========== TABS ==========
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Ringkasan", "📈 Grafik", "🗺️ Peta", "📄 Data"])
+desa_list = sorted(df_kec['DESA'].dropna().unique())
+selected_desa = st.selectbox("Pilih Desa", ["Semua"] + desa_list)
 
-# ========== TAB RINGKASAN ==========
+# Filter berdasarkan desa
+if selected_desa != "Semua":
+    df_filtered = df_kec[df_kec['DESA'] == selected_desa]
+else:
+    df_filtered = df_kec.copy()
+
+# Tambahan Filter JENIS PERKERASAN
+if 'JENIS PERKERASAN' in df.columns:
+    perkerasan_list = sorted(df_filtered['JENIS PERKERASAN'].dropna().unique())
+    selected_perkerasan = st.multiselect("Pilih Jenis Perkerasan", perkerasan_list, default=perkerasan_list)
+    df_filtered = df_filtered[df_filtered['JENIS PERKERASAN'].isin(selected_perkerasan)]
+
+# ========== RINGKASAN ==========
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Ringkasan", "📈 Grafik", "🗺️ Peta", "📄 Data Mentah"])
+
 with tab1:
     st.subheader("📊 Statistik Kondisi Jalan")
 
